@@ -1,5 +1,2 @@
-from .steps import *
-
-__version__ = '0.1.0'
-
+__version__ = VERSION = (0, 1, 0)
 
