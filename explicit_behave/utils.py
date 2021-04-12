@@ -7,6 +7,7 @@ from functools import partial
 import yaml
 from django.apps import apps
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError, FieldDoesNotExist
 from django.core.management.color import no_style
 from django.core.serializers import python as serializers
@@ -54,7 +55,7 @@ def extract_field_value(data_or_model, field, raise_exceptions=False):
     try:
         if '__' not in field:
             val = get_val(data_or_model, field)
-            return str(val) if isinstance(val, (dict, list)) else val
+            return str(val) if isinstance(val, (dict, list)) and not isinstance(data_or_model._meta.get_field(field), JSONField) else val
         base_field, _, remaining_field = field.partition('__')
         return extract_field_value(get_val(data_or_model, base_field), remaining_field, raise_exceptions)
     except AttributeError:
@@ -325,6 +326,10 @@ def get_to_python_field(model, field, value):
         # Since an empty value is always converted to None, an empty string must be specified as '""' or "''".
         elif value == '""' or value == "''":
             return ''
+    elif isinstance(field, JSONField):
+        # JSONField.to_python() is not implemented. See the reason at https://code.djangoproject.com/ticket/29147
+        # Handle this case to fulfill our own needs.
+        return json.loads(value)
     try:
         return field.to_python(value)
     except ValidationError:

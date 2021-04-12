@@ -5,4 +5,4 @@ docs/build
 dist
 .project
 .idea/*
-explicit_behave.egg-info/*
+django_explicit_behave.egg-info/*
