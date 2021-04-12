@@ -58,7 +58,7 @@ def step_impl(context, method_name, url, url_args, url_params):
         # Could not find an easier way to parse the named url WITH parameters
         url = Template(f"{{% url '{url}' {url_args or ''} %}}").render(Context())
     if url_params:
-        url = f'{url}?{"&".join([param.strip().replace(";", ",") for param in url_params.split(",")])}'
+        url = f'{url}?{"&".join([param.strip().replace(";", ",") for param in url_params.split(", ")])}'
     method = getattr(context.test.client, method_name.lower())
     context.response = method(url, data=data, **headers)
 

@@ -8,6 +8,8 @@ import yaml
 from behave import *
 from django.apps import apps
 from django.conf import settings
+from django.contrib.auth import get_user_model, models
+from django.core.files.base import ContentFile
 from django.db import reset_queries, connection
 from django.db.models import Q, signals
 from django.utils.functional import lazystr
@@ -16,6 +18,8 @@ from model_mommy import mommy
 
 from .utils import (pretty_print_table, extract_field_value, reset_db_seq, parse_step_objects, ParseQuery,
                     get_model)
+
+UserModel = get_user_model()
 
 all_model_signals = [signal for signal in vars(signals).values() if isinstance(signal, signals.ModelSignal)]
 
@@ -289,3 +293,37 @@ class adjust_searchpath_for_model:
     def __exit__(self, type, value, traceback):
         if self.is_public_model:
             self.context.__exit__(type, value, traceback)
+
+
+@step('(limpio e )?asigno los siguientes permisos al usuario con username "([^"]+)"')
+def insert_to_db(context, limpio, username):
+    user = UserModel.objects.get(username=username)
+    if limpio:
+        user.user_permissions.all().delete()
+
+    for row in context.table:
+        filters = dict(zip(context.table.headings, row))
+        user.user_permissions.add(models.Permission.objects.get(**filters))
+
+
+@step('(limpio e )?asigno los siguientes grupos al usuario con username "([^"]+)"')
+def insert_to_db(context, limpio, username):
+    user = UserModel.objects.get(username=username)
+    if limpio:
+        user.groups.all().delete()
+
+    for row in context.table:
+        filters = row.as_dict()
+        user.groups.add(models.Group.objects.get(**filters))
+
+
+@step('inserto un file con nombre "([^\"]+)" en el campo "([^\"]+)" del modelo "([^\"]+)" identificado por "([^\"]+)"')
+def insert_to_db(context, filename, field, model, filter_fields):
+    """
+    Y inserto un file con nombre "test.py" en el campo "adjunto" del modelo "permiso.PeticionPermiso" identificado por "id=1"
+    """
+    Model = get_model(model)
+    # The fields that identify each row are separated by a comma.
+    filter_fields = dict(x.split("=") for x in filter_fields.split(","))
+    instance = Model.objects.get(**filter_fields)
+    getattr(instance, field).save(filename, ContentFile(b'asdf'))
