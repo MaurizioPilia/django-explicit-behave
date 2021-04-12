@@ -295,7 +295,7 @@ class adjust_searchpath_for_model:
             self.context.__exit__(type, value, traceback)
 
 
-@step('(limpio e )?asigno los siguientes permisos al usuario con username "([^"]+)"')
+@step('(limpio y )?asigno los siguientes permisos al usuario con username "([^"]+)"')
 def insert_to_db(context, limpio, username):
     user = UserModel.objects.get(username=username)
     if limpio:
@@ -306,7 +306,7 @@ def insert_to_db(context, limpio, username):
         user.user_permissions.add(models.Permission.objects.get(**filters))
 
 
-@step('(limpio e )?asigno los siguientes grupos al usuario con username "([^"]+)"')
+@step('(limpio y )?asigno los siguientes grupos al usuario con username "([^"]+)"')
 def insert_to_db(context, limpio, username):
     user = UserModel.objects.get(username=username)
     if limpio:
