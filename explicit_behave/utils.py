@@ -205,7 +205,7 @@ def parse_step_objects(context, Model, raise_exceptions=True):
                 pass
             elif value.startswith('[') and value.endswith(']'):
                 # Handle special "[..]" nk format
-                obj_by_nk_by_field[lookup_field][value] = yaml.load(value)
+                obj_by_nk_by_field[lookup_field][value] = yaml.load(value, Loader=yaml.FullLoader)
             elif not value.isdigit():
                 raise ValueError(f'Please specify a natural key as "[{value}]"')
             else:

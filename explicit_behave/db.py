@@ -156,7 +156,7 @@ def database_has_rows(context, model, exact_contain, filter_fields, order_fields
                 ForeignModel = getattr(queryset.model._meta.get_field(field), 'related_model')
                 if ForeignModel and hasattr(ForeignModel.objects, 'get_by_natural_key'):
                     keys = inspect.getfullargspec(ForeignModel.objects.get_by_natural_key).args[1:]
-                    _filter.update(dict(zip([f'{field}__{k}' for k in keys], yaml.load(_filter.pop(field)))))
+                    _filter.update(dict(zip([f'{field}__{k}' for k in keys], yaml.load(_filter.pop(field), Loader=yaml.FullLoader))))
             if _filter:
                 filters.append(Q(**_filter))
         queryset = queryset.filter(reduce(operator.or_, filters))
