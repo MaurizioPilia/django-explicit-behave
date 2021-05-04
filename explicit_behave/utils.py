@@ -5,9 +5,13 @@ import operator
 from functools import partial
 
 import yaml
-from django.apps import apps
+import django
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.postgres.fields import JSONField
+
+if django.VERSION[0] >= 3:
+    from django.db.models import JSONField
+else:
+    from django.contrib.postgres.fields.jsonb import JSONField
 from django.core.exceptions import ValidationError, FieldDoesNotExist
 from django.core.management.color import no_style
 from django.core.serializers import python as serializers
@@ -405,9 +409,9 @@ def convert_type(obj):
 def get_model(model):
     try:
         app_label, model_name, through_model = model.split('.')
-        Model = apps.get_model(app_label=app_label, model_name=model_name)
+        Model = django.apps.apps.get_model(app_label=app_label, model_name=model_name)
         return getattr(Model, through_model).through
     except ValueError:
         app_label, model_name = model.split('.')
-        return apps.get_model(app_label=app_label, model_name=model_name)
+        return django.apps.apps.get_model(app_label=app_label, model_name=model_name)
 
