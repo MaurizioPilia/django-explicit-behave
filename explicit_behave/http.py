@@ -207,3 +207,10 @@ def check_request_response(context, jq_format):
         context.test.assertEquals(actual, expected)
     else:
         raise Exception('Nothing to compare')
+
+
+@step('la respuesta contiene los siguientes headers')
+def check_headers(context):
+    for row in context.table.rows:
+        assert row['key'] in context.response.headers, (f'key {row["key"]} not found', context.response.headers.keys())
+        assert context.response.headers[row['key']] == row['value'], (context.response.headers[row['key']], row['value'])
