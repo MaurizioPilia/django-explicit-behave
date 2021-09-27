@@ -21,7 +21,7 @@ setup(
         'PyYAML>=3.13',
         'jq>=0.1.6',
         'factory-boy>=2.12.0',
-        'model-mommy>=1.6.0',
+        'model-bakery>=1.3.2',
         'tabulate>=0.8.3',
     ],
     python_requires='>=3.6',

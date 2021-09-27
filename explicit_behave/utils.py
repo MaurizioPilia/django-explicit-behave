@@ -223,7 +223,7 @@ def parse_step_objects(context, Model, raise_exceptions=True):
 
     # Do a single lookup call for all ids at once.
     for lookup_field, value_map in obj_by_id_by_field.items():
-        for instance in get_field(Model, lookup_field).related_model.objects.filter(id__in=value_map.keys()):
+        for instance in get_field(Model, lookup_field).related_model.objects.filter(pk__in=value_map.keys()):
             value_map[str(instance.id)] = instance
 
     # Find the FK object for each nk.

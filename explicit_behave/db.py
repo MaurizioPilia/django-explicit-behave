@@ -14,7 +14,7 @@ from django.db import reset_queries, connection
 from django.db.models import Q, signals
 from django.utils.functional import lazystr
 from factory.django import mute_signals
-from model_mommy import mommy
+from model_bakery import baker
 
 from .utils import (pretty_print_table, extract_field_value, reset_db_seq, parse_step_objects, ParseQuery,
                     get_model)
@@ -68,7 +68,7 @@ def insert_to_db(context, limpio, model, no_signals):
             for field in context.table.headings:
                 if field in many_to_many_names.keys():
                     data[field] = many_to_many_names[field].objects.filter(pk__in=literal_eval(data[field]))
-            mommy.make(Model, **data, _create_files=True)
+            baker.make(Model, **data, _create_files=True)
     reset_db_seq(Model)
 
 
