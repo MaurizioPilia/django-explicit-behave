@@ -222,6 +222,8 @@ def confirm_num_database_queries(context, expected_queries):
           | startswith | SET schema      |
           | contains   | savepoint       |
     """
+    if getattr(settings, 'SKIP_QUERY_COUNT', False):
+        return True
     included_queries = []
     excluded_queries = []
     values_by_method = defaultdict(list)  # key: str method that takes one arg. values: list of args to try 1 at a time
