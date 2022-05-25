@@ -358,6 +358,8 @@ def reset_db_seq(Model, next_value=None):
             # Find the highest id value in use if next_value is None or 0.
             cursor.execute(f"SELECT MAX(id) FROM {Model._meta.db_table}")
             highest_value = cursor.fetchone()[0]
+            if not isinstance(highest_value, int):
+                return
 
             # If the table has a max(id) of None, it is empty so start the next value at 1.
             # If the table has a max(id) of 1, start the next value at 2.
@@ -368,7 +370,6 @@ def reset_db_seq(Model, next_value=None):
         # If false, the next value returned will be the specified value.
         # If true,  the next value returned will be the specified value + 1.
         # https://www.postgresql.org/docs/9.6/static/functions-sequence.html
-        value_was_used = False
         # cursor.execute(f"SELECT NVL('{next_value}) {Model._meta.db_table}_id_seq', %s, %s)", (next_value, value_was_used))
         sequence_sql = connection.ops.sequence_reset_sql(no_style(), [Model])
         for sql in sequence_sql:
