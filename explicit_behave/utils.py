@@ -12,6 +12,7 @@ if django.VERSION[0] >= 3:
     from django.db.models import JSONField
 else:
     from django.contrib.postgres.fields.jsonb import JSONField
+from django.db.models import UUIDField
 from django.core.exceptions import ValidationError, FieldDoesNotExist
 from django.core.management.color import no_style
 from django.core.serializers import python as serializers
@@ -349,9 +350,12 @@ def reset_db_seq(Model, next_value=None):
                                  If unspecified, set the sequence so the next value is max(id) + 1.
     """
     try:
-        Model._meta.get_field('id')
+        primary_key = Model._meta.get_field('id')
     except FieldDoesNotExist:
         return  # If id field does not exist, do not reset the sequence.
+
+    if isinstance(primary_key, UUIDField):
+        return
 
     with connection.cursor() as cursor:
         if not next_value:
