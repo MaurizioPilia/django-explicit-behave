@@ -187,7 +187,7 @@ def database_has_rows(context, model, exact_contain, filter_fields, order_fields
         key = tuple([clean_row[key] for key in filter_fields])
         expected_values_by_id[key] = clean_row
     # Ensure that all the ids we got back are the same as what we expected
-    assert len(hashes) == len(expected_values_by_id)
+    assert len(hashes) == len(expected_values_by_id), "The number of the expected values doesn't match with the number of rows defined. Please, check for duplicities in your identifier columns"
     assert actual_values_by_id.keys() == expected_values_by_id.keys(), (actual_values_by_id.keys(), expected_values_by_id.keys())
 
     # Ensure that all the rows match one by one
