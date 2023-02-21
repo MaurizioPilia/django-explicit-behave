@@ -300,7 +300,7 @@ class adjust_searchpath_for_model:
 
 @step('(limpio y )?asigno los siguientes permisos al usuario con username "([^"]+)"')
 def insert_to_db(context, limpio, username):
-    user = UserModel.objects.get(username=username)
+    user = UserModel.objects.get(**{UserModel.USERNAME_FIELD: username})
     if limpio:
         user.user_permissions.all().delete()
 
@@ -311,7 +311,7 @@ def insert_to_db(context, limpio, username):
 
 @step('(limpio y )?asigno los siguientes grupos al usuario con username "([^"]+)"')
 def insert_to_db(context, limpio, username):
-    user = UserModel.objects.get(username=username)
+    user = UserModel.objects.get(**{UserModel.USERNAME_FIELD: username})
     if limpio:
         user.groups.all().delete()
 
