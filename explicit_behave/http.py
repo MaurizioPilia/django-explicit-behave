@@ -2,6 +2,7 @@ import ast
 import json
 
 from behave import *
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Template, Context
 from jq import jq
 
@@ -45,7 +46,7 @@ def step_impl(context, method_name, url, url_args, url_params):
 
     data = None
     if context.text:
-        data = context.text
+        data = json.loads(context.text)
     elif context.table:
         fields = context.table.headings
         # This is used to send a single dict as the payload
@@ -60,6 +61,9 @@ def step_impl(context, method_name, url, url_args, url_params):
     if url_params:
         url = f'{url}?{"&".join([param.strip().replace(";", ",") for param in url_params.split(", ")])}'
     method = getattr(context.test.client, method_name.lower())
+    if context.files:
+        data = {**data, **context.files}
+        headers.pop('content_type')
     context.response = method(url, data=data, **headers)
 
 
@@ -70,6 +74,11 @@ def add_request_headers(context, use_literals):
     cast = ast.literal_eval if bool(use_literals) else lambda x: x
     for item in context.table.rows:
         context.http_headers[item['name']] = cast(item['value'])
+
+
+@step('añado un documento a la petición con el nombre "([^"]+)"')
+def add_document_to_request(context, name):
+    context.files = {name: SimpleUploadedFile('test.txt', b'test')}
 
 
 @step('el codigo de retorno es "([0-9]{3})"')
