@@ -46,7 +46,7 @@ def step_impl(context, method_name, url, url_args, url_params):
 
     data = None
     if context.text:
-        data = json.loads(context.text)
+        data = context.text
     elif context.table:
         fields = context.table.headings
         # This is used to send a single dict as the payload
@@ -61,9 +61,10 @@ def step_impl(context, method_name, url, url_args, url_params):
     if url_params:
         url = f'{url}?{"&".join([param.strip().replace(";", ",") for param in url_params.split(", ")])}'
     method = getattr(context.test.client, method_name.lower())
-    if context.files:
-        data = {**data, **context.files}
+    if hasattr(context, "files") and context.files is not None:
+        data = {**json.loads(data), **context.files}
         headers.pop('content_type')
+        context.files = None
     context.response = method(url, data=data, **headers)
 
 
