@@ -77,9 +77,9 @@ def add_request_headers(context, use_literals):
         context.http_headers[item['name']] = cast(item['value'])
 
 
-@step('añado un documento a la petición con el nombre "([^"]+)"')
-def add_document_to_request(context, name):
-    context.files = {name: SimpleUploadedFile('test.txt', b'test')}
+@step('añado un documento a la petición con el nombre "([^"]+)" (?: con la extension "([^"]+)")')
+def add_document_to_request(context, name, extension):
+    context.files = {name: SimpleUploadedFile(f'test.{extension}', b'test')}
 
 
 @step('el codigo de retorno es "([0-9]{3})"')
