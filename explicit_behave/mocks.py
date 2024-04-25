@@ -300,7 +300,6 @@ def verify_mocked_call_args(context, mock_name, params):
 
     # Get the original function being patched.
     func = patch_obj.temp_original
-    func_signature = inspect.signature(func)
     headers = context.table.headings
 
     # Return a generator of dict having actual argument name and value pair.
