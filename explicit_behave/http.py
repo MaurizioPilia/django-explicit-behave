@@ -10,6 +10,7 @@ from .utils import extract_field_value, pretty_print_table
 
 
 @step('hago las peticiones desde la url "([^"]+)"')
+@step('I make requests from the url "([^"]+)"')
 def set_url(context, url):
     try:
         context.http_headers['HTTP_REFERER'] = url
@@ -18,6 +19,7 @@ def set_url(context, url):
 
 
 @step('hago un "([^"]+)" a la url "([^"]+)"(?: con los argumentos "([^"]+)")?(?: (?:y|con) los parametros "([^"]+)")?(?: (?:y|con) body)?')
+@step('I make a "([^"]+)" to the url "([^"]+)"(?: with the arguments "([^"]+)")?(?: (and|with) the parameters "([^"]+)")?(?: (and|with) body)?')
 def step_impl(context, method_name, url, url_args, url_params):
     """
     Hago un "get" a la url "factura"
@@ -69,6 +71,7 @@ def step_impl(context, method_name, url, url_args, url_params):
 
 
 @step('configuro los headers( usando literales|)')
+@step('I configure the headers( using literals|)')
 def add_request_headers(context, use_literals):
     # The way django settings is made, it allows for settings and headers to be passed in as one
     context.http_headers = {}
@@ -78,21 +81,25 @@ def add_request_headers(context, use_literals):
 
 
 @step('añado un documento a la petición con el nombre "([^"]+)" y nombre de archivo "([^"]+)"')
+@step('I add a document to the request with the name "([^"]+)" and filename "([^"]+)"')
 def add_document_to_request(context, name, filename):
     context.files = {name: SimpleUploadedFile(filename, b'test')}
 
 
 @step('el codigo de retorno es "([0-9]{3})"')
+@step('the return code is "([0-9]{3})"')
 def step_impl(context, status_code):
     assert context.response.status_code == int(status_code), (context.response.status_code, context.response.content)
 
 
 @step('hay "([0-9]+)" elementos en la response')
+@step('there are "([0-9]+)" elements in the response')
 def step_impl(context, count):
     assert len(context.response.json()['results']) == int(count)
 
 
 @step('(?:utilizando el formato jq "(.*)")? la response es')
+@step('(?:using the jq format "(.*)")? the response is')
 def check_request_response(context, jq_format):
     """
     More details about the jq can be found at their docs: https://stedolan.github.io/jq/manual/#Basicfilters
@@ -220,6 +227,7 @@ def check_request_response(context, jq_format):
 
 
 @step('la respuesta contiene los siguientes headers')
+@step('the response contains the following headers')
 def check_headers(context):
     for row in context.table.rows:
         assert row['key'] in context.response.headers, (f'key {row["key"]} not found', context.response.headers.keys())

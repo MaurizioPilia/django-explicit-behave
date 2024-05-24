@@ -4,12 +4,14 @@ from freezegun import freeze_time
 
 
 @step('hoy es el "([^"]+)"')
+@step('today is "([^"]+)"')
 def freeeze(context, date):
     freezer = freeze_time(date, ignore=['behave.runner'])
     freezer.start()
 
 
 @step('veo que se han enviado emails con los siguientes parametros')
+@step('I see that emails have been sent with the following parameters')
 def step_mpl(context):
     context.test.assertEqual(len(mail.outbox), len(context.table.rows))
     for row in context.table.rows:
@@ -26,5 +28,6 @@ def step_mpl(context):
 
 
 @step('veo que no se ha enviado email')
+@step('I see that no email has been sent')
 def step_mpl(context):
     assert len(mail.outbox) == 0

@@ -207,6 +207,7 @@ mocker_step = MOCK_REGISTRY.step
 
 
 @step('enciendo el mock llamado "([^\"]+)" para este "(caracteristica|escenario)"( con los argumentos)?')
+@step('I turn on the mock named "([^\"]+)" for this "(feature|scenario)"( with arguments)?')
 def start_mocking(context, function_name, scope, receiving_args):
     """
     Starts the named mock functions.
@@ -233,6 +234,7 @@ def start_mocking(context, function_name, scope, receiving_args):
 
 
 @step('apago el mock llamado "([^\"]+)"')
+@step('I turn off the mock named "([^\"]+)"')
 def stop_mocking(step_, name):
     """
     Stops the named mock function given a name.
@@ -265,6 +267,7 @@ def stop_scenario_mocks(*args, **kwargs):
 
 
 @step('verifico que el mock "([^\"]+)" ha sido llamado( con los siguientes parametros)?')
+@step('I verify that the mock "([^\"]+)" has been called( with the following parameters)?')
 def verify_mocked_call_args(context, mock_name, params):
     """
     This step function can be used to assert the parameter with which a mock was called.
@@ -325,6 +328,7 @@ def verify_mocked_call_args(context, mock_name, params):
 
 
 @mocker_step('(limpio e |)mockeo las siguientes variables de entorno')
+@mocker_step('(I clear and |)I mock the following environment variables')
 def mock_environment_variables(context, clear_environ):
     """ Mock in environment variables to use during tests. """
     old_environ = deepcopy(environ)
