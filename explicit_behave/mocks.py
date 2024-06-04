@@ -328,8 +328,26 @@ def verify_mocked_call_args(context, mock_name, params):
 
 
 @mocker_step('(limpio e |)mockeo las siguientes variables de entorno')
-@mocker_step('(I clear and |)I mock the following environment variables')
 def mock_environment_variables(context, clear_environ):
+    """ Mock in environment variables to use during tests. """
+    old_environ = deepcopy(environ)
+    if clear_environ:
+        # Only the variables we account for should be there.
+        environ.clear()
+    for row in context.table.rows:
+        # Other environment variables
+        row_dict = row.as_dict()
+        environ[row_dict['key']] = row_dict['value']
+
+    yield
+
+    # Reset the os.environ dictionary
+    environ.clear()
+    environ.update(old_environ)
+
+
+@mocker_step('(I clear and |)I mock the following environment variables')
+def mock_environment_variables_eng(context, clear_environ):
     """ Mock in environment variables to use during tests. """
     old_environ = deepcopy(environ)
     if clear_environ:
