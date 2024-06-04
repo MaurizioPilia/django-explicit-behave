@@ -21,8 +21,8 @@ def set_url(context, url):
         context.http_headers = {'HTTP_REFERER': url}
 
 
-@step('mio hago un "([^"]+)" a la url "([^"]+)"(?: con los argumentos "([^"]+)")?(?: (?:y|con) los parametros "([^"]+)")?(?: (?:y|con) body)?')
-@step('mio I make a "([^"]+)" to the url "([^"]+)"(?: with the arguments "([^"]+)")?(?: (?:and|with) the parameters "([^"]+)")?(?: (?:and|with) body)?')
+@step('hago un "([^"]+)" a la url "([^"]+)"(?: con los argumentos "([^"]+)")?(?: (?:y|con) los parametros "([^"]+)")?(?: (?:y|con) body)?')
+@step('I make a "([^"]+)" to the url "([^"]+)"(?: with the arguments "([^"]+)")?(?: (?:and|with) the parameters "([^"]+)")?(?: (?:and|with) body)?')
 def step_impl(context, method_name, url, url_args, url_params):
     """
     Hago un "get" a la url "factura"
