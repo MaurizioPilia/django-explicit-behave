@@ -1,15 +1,19 @@
 import ast
+from functools import partial
 import json
 
 from behave import *
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Template, Context
+from django.utils.module_loading import import_string
 from jq import jq
+from rest_framework.test import APIRequestFactory
 
 from .utils import extract_field_value, pretty_print_table
 
 
 @step('hago las peticiones desde la url "([^"]+)"')
+@step('I make requests from the url "([^"]+)"')
 def set_url(context, url):
     try:
         context.http_headers['HTTP_REFERER'] = url
@@ -18,6 +22,7 @@ def set_url(context, url):
 
 
 @step('hago un "([^"]+)" a la url "([^"]+)"(?: con los argumentos "([^"]+)")?(?: (?:y|con) los parametros "([^"]+)")?(?: (?:y|con) body)?')
+@step('I make a "([^"]+)" to the url "([^"]+)"(?: with the arguments "([^"]+)")?(?: (and|with) the parameters "([^"]+)")?(?: (and|with) body)?')
 def step_impl(context, method_name, url, url_args, url_params):
     """
     Hago un "get" a la url "factura"
@@ -68,7 +73,76 @@ def step_impl(context, method_name, url, url_args, url_params):
     context.response = method(url, data=data, **headers)
 
 
+@step(
+    'hago un "([^"]+)" a la view "([^"]+)"(?: con los argumentos "([^"]+)")?(?: (?:y|con) los parametros "([^"]+)")?(?: (?:y|con) body)?'
+)
+@step(
+    'I make a "([^"]+)" to the view "([^"]+)"(?: with the arguments "([^"]+)")?(?: (?:and|with) the parameters "([^"]+)")?(?: (?:and|with) body)?'
+)
+def step_impl(context, method_name, view_path, url_args, url_params):
+    """
+    Hago un "get" a la view "gesco.a9m.factura.views.FacturaViewSet:list"
+    Hago un "get" a la view "gesco.a9m.factura.views.FacturaViewSet:list" con los argumentos "id=1"
+    Hago un "get" a la view "gesco.a9m.factura.views.FacturaViewSet:list" con los parametros "ordering=nombre,nombre=mario"
+    Hago un "get" a la view "gesco.a9m.factura.views.FacturaViewSet:list" con body:
+    Hago un "get" a la view "gesco.a9m.factura.views.FacturaViewSet:list" con los argumentos "id=1" y body:
+        | name  |
+        | mario |
+        | luigi |
+    Hago un "get" a la view "gesco.a9m.factura.views.FacturaViewSet" con los argumentos "id=1" y body:
+        | key   | value |
+        | mario | rossi |
+        | luigi | verdi |
+    Hago un "get" a la view "gesco.a9m.factura.views.FacturaViewSet" con los argumentos "id=1" y body:
+        '''
+        { raw json }
+        '''
+        # Use triple double-quotes
+    """
+    headers = {"content_type": "application/json", "Accept": "application/json"}
+    try:
+        headers = dict(headers, **context.http_headers)
+    except AttributeError:
+        pass
+
+    data = None
+    if context.text:
+        data = context.text
+    elif context.table:
+        fields = context.table.headings
+        # This is used to send a single dict as the payload
+        if len(fields) == 2 and "key" in fields and "value" in fields:
+            data = {item["key"]: item["value"] for item in context.table.headings}
+        else:
+            data = list(context.table.headings)
+    view_path, view_method = view_path.split(":")
+    view_class = import_string(view_path)
+    url = "/"
+    if url_params:
+        url = f'{url}?{"&".join([param.strip().replace(";", ",") for param in url_params.split(", ")])}'
+    request = getattr(APIRequestFactory(), method_name.lower())(
+        path=url,
+        data=json.loads(data),
+        format="json",
+        **{
+            f"HTTP_{key.upper()}".replace("-", "_"): value
+            for key, value in headers.items()
+        },
+    )
+    request.user = context.user
+    request.session = {}
+    view_function = view_class.as_view({method_name.lower(): view_method})
+    kwargs = {}
+    if url_args:
+        kwargs = dict(elemento.split("=") for elemento in url_args.split())
+    response = view_function(request=request, **kwargs)
+    response = response.render()
+    response.json = partial(context.test.client._parse_json, response)
+    context.response = response
+
+
 @step('configuro los headers( usando literales|)')
+@step('I configure the headers( using literals|)')
 def add_request_headers(context, use_literals):
     # The way django settings is made, it allows for settings and headers to be passed in as one
     context.http_headers = {}
@@ -78,21 +152,25 @@ def add_request_headers(context, use_literals):
 
 
 @step('añado un documento a la petición con el nombre "([^"]+)" y nombre de archivo "([^"]+)"')
+@step('I add a document to the request with the name "([^"]+)" and filename "([^"]+)"')
 def add_document_to_request(context, name, filename):
     context.files = {name: SimpleUploadedFile(filename, b'test')}
 
 
 @step('el codigo de retorno es "([0-9]{3})"')
+@step('the return code is "([0-9]{3})"')
 def step_impl(context, status_code):
     assert context.response.status_code == int(status_code), (context.response.status_code, context.response.content)
 
 
 @step('hay "([0-9]+)" elementos en la response')
+@step('there are "([0-9]+)" elements in the response')
 def step_impl(context, count):
     assert len(context.response.json()['results']) == int(count)
 
 
 @step('(?:utilizando el formato jq "(.*)")? la response es')
+@step('(?:using the jq format "(.*)")? the response is')
 def check_request_response(context, jq_format):
     """
     More details about the jq can be found at their docs: https://stedolan.github.io/jq/manual/#Basicfilters
@@ -220,6 +298,7 @@ def check_request_response(context, jq_format):
 
 
 @step('la respuesta contiene los siguientes headers')
+@step('the response contains the following headers')
 def check_headers(context):
     for row in context.table.rows:
         assert row['key'] in context.response.headers, (f'key {row["key"]} not found', context.response.headers.keys())

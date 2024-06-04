@@ -25,6 +25,7 @@ all_model_signals = [signal for signal in vars(signals).values() if isinstance(s
 
 
 @step('limpio "([^\"]+)"( without resetting its sequence)?')
+@step('I clear "([^\"]+)"( without resetting its sequence)?')
 def clear_the_db(context, model, without_reset_seq):
     Model = get_model(model)
     Model.objects.all().delete()
@@ -33,12 +34,14 @@ def clear_the_db(context, model, without_reset_seq):
 
 
 @step('reseteo las sequencias de "([^\"]+)"')
+@step('I reset the sequences of "([^\"]+)"')
 def clear_the_db(context, model):
     Model = get_model(model)
     reset_db_seq(Model)
 
 
 @step('(limpio e )?inserto las siguientes lineas del modelo "([^\"]+)"( sin signals)?')
+@step('(I clear and )?I insert the following lines of the model "([^\"]+)"( without signals)?')
 def insert_to_db(context, limpio, model, no_signals):
     """
     I insert the following rows for "app.Model":
@@ -73,6 +76,7 @@ def insert_to_db(context, limpio, model, no_signals):
 
 
 @step('modifico las siguientes lineas del modelo "([^\"]+)" identificadas por "([^\"]+)"( sin signals)?')
+@step('I modify the following lines of the model "([^\"]+)" identified by "([^\"]+)"( without signals)?')
 def update_row_in_db(context, model, filter_fields, without_signals):
     """
     Update existing table rows.
@@ -104,12 +108,14 @@ def update_row_in_db(context, model, filter_fields, without_signals):
 
 
 @step('hay "([0-9]+)" "([^\"]+)" en base de datos')
+@step('there are "([0-9]+)" "([^\"]+)" in the database')
 def step_impl(context, count, model):
     Model = get_model(model)
     assert Model.objects.count() == int(count)
 
 
 @step('"([^\"]+)" (tiene exactamente|contiene) las siguientes lineas identificadas por "([^\"]+)"(?: ordenadas por "([^\"]+)")?')
+@step('"([^\"]+)" (has exactly|contains) the following lines identified by "([^\"]+)"(?: ordered by "([^\"]+)")?')
 def database_has_rows(context, model, exact_contain, filter_fields, order_fields):
     """
     Verify the contents of a table.
@@ -196,11 +202,13 @@ def database_has_rows(context, model, exact_contain, filter_fields, order_fields
 
 
 @step('limpio la cache de las queries de base de datos')
+@step('I clear the cache of the database queries')
 def clear_database_query_cache(context):
     reset_queries()
 
 
 @step('veo que se han hecho "([0-9]+)" queries en base de datos(?: ignorando)?')
+@step('I see that "([0-9]+)" queries have been made on the database(?: ignoring)?')
 def confirm_num_database_queries(context, expected_queries):
     """
     Allows the user to get an accurate count of the amount of queries ran.
@@ -299,6 +307,7 @@ class adjust_searchpath_for_model:
 
 
 @step('(limpio y )?asigno los siguientes permisos al usuario con username "([^"]+)"')
+@step('(I clear and )?I assign the following permissions to the user with username "([^"]+)"')
 def insert_to_db(context, limpio, username):
     user = UserModel.objects.get(**{UserModel.USERNAME_FIELD: username})
     if limpio:
@@ -310,6 +319,7 @@ def insert_to_db(context, limpio, username):
 
 
 @step('(limpio y )?asigno los siguientes grupos al usuario con username "([^"]+)"')
+@step('(I clear and )?I assign the following groups to the user with username "([^"]+)"')
 def insert_to_db(context, limpio, username):
     user = UserModel.objects.get(**{UserModel.USERNAME_FIELD: username})
     if limpio:
@@ -321,6 +331,7 @@ def insert_to_db(context, limpio, username):
 
 
 @step('inserto un file con nombre "([^\"]+)" en el campo "([^\"]+)" del modelo "([^\"]+)" identificado por "([^\"]+)"')
+@step('I insert a file with name "([^\"]+)" in the field "([^\"]+)" of the model "([^\"]+)" identified by "([^\"]+)"')
 def insert_to_db(context, filename, field, model, filter_fields):
     """
     Y inserto un file con nombre "test.py" en el campo "adjunto" del modelo "permiso.PeticionPermiso" identificado por "id=1"

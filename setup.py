@@ -17,6 +17,7 @@ setup(
     install_requires=[
         'behave>=1.2.6',
         'Django>=1.11',
+        'djangorestframework>=3.9.1',
         'freezegun>=0.3.11',
         'PyYAML>=3.13',
         'jq>=0.1.6',
@@ -35,6 +36,10 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         "Framework :: Django",
     ],
     zip_safe=False,
