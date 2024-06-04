@@ -220,6 +220,10 @@ def start_mocking(context, function_name, scope, receiving_args):
         | example                |
 
     """
+    if scope == "feature":
+        scope = "caracteristica"
+    elif scope == "scenario":
+        scope = "escenario"
     kwargs = {}
     if receiving_args:
         if context.table:
