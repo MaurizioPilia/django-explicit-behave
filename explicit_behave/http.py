@@ -122,7 +122,7 @@ def step_impl(context, method_name, view_path, url_args, url_params):
         url = f'{url}?{"&".join([param.strip().replace(";", ",") for param in url_params.split(", ")])}'
     request = getattr(APIRequestFactory(), method_name.lower())(
         path=url,
-        data=json.loads(data),
+        data=json.loads(data) if data else None,
         format="json",
         **{
             f"HTTP_{key.upper()}".replace("-", "_"): value
