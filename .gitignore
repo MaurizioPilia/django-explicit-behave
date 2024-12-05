@@ -6,3 +6,4 @@ dist
 .project
 .idea/*
 django_explicit_behave.egg-info/*
+*.egg-info
