@@ -2,7 +2,7 @@ import inspect
 import operator
 from ast import literal_eval
 from collections import defaultdict
-from functools import reduce, partial
+from functools import partial, reduce
 
 import yaml
 from behave import *
@@ -10,22 +10,21 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model, models
 from django.core.files.base import ContentFile
-from django.db import reset_queries, connection
+from django.db import connection, reset_queries
 from django.db.models import Q, signals
 from django.utils.functional import lazystr
 from factory.django import mute_signals
 from model_bakery import baker
 
-from .utils import (pretty_print_table, extract_field_value, reset_db_seq, parse_step_objects, ParseQuery,
-                    get_model)
+from .utils import ParseQuery, extract_field_value, get_model, parse_step_objects, pretty_print_table, reset_db_seq
 
 UserModel = get_user_model()
 
 all_model_signals = [signal for signal in vars(signals).values() if isinstance(signal, signals.ModelSignal)]
 
 
-@step('limpio "([^\"]+)"( without resetting its sequence)?')
-@step('I clear "([^\"]+)"( without resetting its sequence)?')
+@step('limpio "([^"]+)"( without resetting its sequence)?')
+@step('I clear "([^"]+)"( without resetting its sequence)?')
 def clear_the_db(context, model, without_reset_seq):
     Model = get_model(model)
     Model.objects.all().delete()
@@ -33,15 +32,15 @@ def clear_the_db(context, model, without_reset_seq):
         reset_db_seq(Model)
 
 
-@step('reseteo las sequencias de "([^\"]+)"')
-@step('I reset the sequences of "([^\"]+)"')
+@step('reseteo las sequencias de "([^"]+)"')
+@step('I reset the sequences of "([^"]+)"')
 def clear_the_db(context, model):
     Model = get_model(model)
     reset_db_seq(Model)
 
 
-@step('(limpio e )?inserto las siguientes lineas del modelo "([^\"]+)"( sin signals)?')
-@step('(I clear and )?I insert the following lines of the model "([^\"]+)"( without signals)?')
+@step('(limpio e )?inserto las siguientes lineas del modelo "([^"]+)"( sin signals)?')
+@step('(I clear and )?I insert the following lines of the model "([^"]+)"( without signals)?')
 def insert_to_db(context, limpio, model, no_signals):
     """
     I insert the following rows for "app.Model":
@@ -75,8 +74,8 @@ def insert_to_db(context, limpio, model, no_signals):
     reset_db_seq(Model)
 
 
-@step('modifico las siguientes lineas del modelo "([^\"]+)" identificadas por "([^\"]+)"( sin signals)?')
-@step('I modify the following lines of the model "([^\"]+)" identified by "([^\"]+)"( without signals)?')
+@step('modifico las siguientes lineas del modelo "([^"]+)" identificadas por "([^"]+)"( sin signals)?')
+@step('I modify the following lines of the model "([^"]+)" identified by "([^"]+)"( without signals)?')
 def update_row_in_db(context, model, filter_fields, without_signals):
     """
     Update existing table rows.
@@ -95,7 +94,7 @@ def update_row_in_db(context, model, filter_fields, without_signals):
     """
     Model = get_model(model)
     # The fields that identify each row are separated by a comma.
-    filter_fields = [field.strip() for field in filter_fields.split(',')]
+    filter_fields = [field.strip() for field in filter_fields.split(",")]
 
     for value_by_field in parse_step_objects(context, Model):
         # Remove the filtering (identifying) field from the data values.
@@ -107,15 +106,17 @@ def update_row_in_db(context, model, filter_fields, without_signals):
             Model.objects.get(**filters).save()
 
 
-@step('hay "([0-9]+)" "([^\"]+)" en base de datos')
-@step('there are "([0-9]+)" "([^\"]+)" in the database')
+@step('hay "([0-9]+)" "([^"]+)" en base de datos')
+@step('there are "([0-9]+)" "([^"]+)" in the database')
 def step_impl(context, count, model):
     Model = get_model(model)
     assert Model.objects.count() == int(count)
 
 
-@step('"([^\"]+)" (tiene exactamente|contiene) las siguientes lineas identificadas por "([^\"]+)"(?: ordenadas por "([^\"]+)")?')
-@step('"([^\"]+)" (has exactly|contains) the following lines identified by "([^\"]+)"(?: ordered by "([^\"]+)")?')
+@step(
+    '"([^"]+)" (tiene exactamente|contiene) las siguientes lineas identificadas por "([^"]+)"(?: ordenadas por "([^"]+)")?'
+)
+@step('"([^"]+)" (has exactly|contains) the following lines identified by "([^"]+)"(?: ordered by "([^"]+)")?')
 def database_has_rows(context, model, exact_contain, filter_fields, order_fields):
     """
     Verify the contents of a table.
@@ -138,17 +139,17 @@ def database_has_rows(context, model, exact_contain, filter_fields, order_fields
     Model = get_model(model)
 
     fields = context.table.headings
-    filter_fields = [field.strip() for field in filter_fields.split(',')]
+    filter_fields = [field.strip() for field in filter_fields.split(",")]
 
     actual_values_by_id = {}
     queryset = Model.objects.select_related()
     if order_fields:
-        order_fields = [field.strip() for field in order_fields.split(',')]
+        order_fields = [field.strip() for field in order_fields.split(",")]
         queryset = queryset.order_by(*order_fields)
     else:
-        queryset = queryset.order_by('pk')
+        queryset = queryset.order_by("pk")
     # Only filter the query if it's a contain, otherwise we'll always retrieve the entire table contents
-    if exact_contain == 'contiene':
+    if exact_contain == "contiene":
         filters = []
         for row in context.table.rows:
             _filter = {}
@@ -156,13 +157,19 @@ def database_has_rows(context, model, exact_contain, filter_fields, order_fields
                 if field in fields:
                     _filter[field] = row[field]
                 else:
-                    raise KeyError(f'Rows cannot be identified by "{field}". '
-                                   f'Ensure that "{field}" is present in the hash table.')
+                    raise KeyError(
+                        f'Rows cannot be identified by "{field}". '
+                        f'Ensure that "{field}" is present in the hash table.'
+                    )
 
-                ForeignModel = getattr(queryset.model._meta.get_field(field), 'related_model')
-                if ForeignModel and hasattr(ForeignModel.objects, 'get_by_natural_key'):
+                ForeignModel = getattr(queryset.model._meta.get_field(field), "related_model")
+                if ForeignModel and hasattr(ForeignModel.objects, "get_by_natural_key"):
                     keys = inspect.getfullargspec(ForeignModel.objects.get_by_natural_key).args[1:]
-                    _filter.update(dict(zip([f'{field}__{k}' for k in keys], yaml.load(_filter.pop(field), Loader=yaml.FullLoader))))
+                    _filter.update(
+                        dict(
+                            zip([f"{field}__{k}" for k in keys], yaml.load(_filter.pop(field), Loader=yaml.FullLoader))
+                        )
+                    )
             if _filter:
                 filters.append(Q(**_filter))
         queryset = queryset.filter(reduce(operator.or_, filters))
@@ -173,8 +180,10 @@ def database_has_rows(context, model, exact_contain, filter_fields, order_fields
         clean_row = {field: extract_field_value(model, field) for field in fields}
         key = tuple([clean_row[field] for field in filter_fields])
         if key in actual_values_by_id:
-            raise Model.MultipleObjectsReturned(f'Uniquely identifying rows by {filter_fields} is not enough. '
-                                                f'Specify fields whose combination is guaranteed to be unique.')
+            raise Model.MultipleObjectsReturned(
+                f"Uniquely identifying rows by {filter_fields} is not enough. "
+                f"Specify fields whose combination is guaranteed to be unique."
+            )
         actual_values_by_id[key] = clean_row
 
     # hashes = [{'student': <Student ...>, 'age': 18, 'nk': 'A1'}, {'student': <Student ...>, 'age': 19, 'nk': 'A2'}]
@@ -193,16 +202,24 @@ def database_has_rows(context, model, exact_contain, filter_fields, order_fields
         key = tuple([clean_row[key] for key in filter_fields])
         expected_values_by_id[key] = clean_row
     # Ensure that all the ids we got back are the same as what we expected
-    assert len(hashes) == len(expected_values_by_id), "The number of the expected values doesn't match with the number of rows defined. Please, check for duplicities in your identifier columns"
-    assert actual_values_by_id.keys() == expected_values_by_id.keys(), (actual_values_by_id.keys(), expected_values_by_id.keys())
+    assert len(hashes) == len(
+        expected_values_by_id
+    ), "The number of the expected values doesn't match with the number of rows defined. Please, check for duplicities in your identifier columns"
+    assert actual_values_by_id.keys() == expected_values_by_id.keys(), (
+        actual_values_by_id.keys(),
+        expected_values_by_id.keys(),
+    )
 
     # Ensure that all the rows match one by one
     for id_ in expected_values_by_id.keys():
-        assert actual_values_by_id[id_] == expected_values_by_id[id_], (actual_values_by_id[id_], expected_values_by_id[id_])
+        assert actual_values_by_id[id_] == expected_values_by_id[id_], (
+            actual_values_by_id[id_],
+            expected_values_by_id[id_],
+        )
 
 
-@step('limpio la cache de las queries de base de datos')
-@step('I clear the cache of the database queries')
+@step("limpio la cache de las queries de base de datos")
+@step("I clear the cache of the database queries")
 def clear_database_query_cache(context):
     reset_queries()
 
@@ -231,14 +248,14 @@ def confirm_num_database_queries(context, expected_queries):
           | startswith | SET schema      |
           | contains   | savepoint       |
     """
-    if getattr(settings, 'SKIP_QUERY_COUNT', False):
+    if getattr(settings, "SKIP_QUERY_COUNT", False):
         return True
     included_queries = []
     excluded_queries = []
     values_by_method = defaultdict(list)  # key: str method that takes one arg. values: list of args to try 1 at a time
-    if getattr(context, 'table'):
+    if getattr(context, "table"):
         for row in context.table.rows:
-            values_by_method[row['metodo']].append(row['valor'].lower())
+            values_by_method[row["metodo"]].append(row["valor"].lower())
 
     for query in connection.queries:
         # Nothing needs to be excluded, just add everything and exit early.
@@ -251,13 +268,13 @@ def confirm_num_database_queries(context, expected_queries):
             # If there are any hits, this "query" needs to be ignored
             if hasattr(operator, method):
                 # Operators include "contains"
-                if any([getattr(operator, method)(query['sql'].lower(), value) for value in values]):
+                if any([getattr(operator, method)(query["sql"].lower(), value) for value in values]):
                     include = False
                     break
             else:
                 # This gets the specified method name from the str class and evaluates it with one arg: value
                 # Example: method='startswith'. 'select * from table'.startswith(value)
-                if any([getattr(query['sql'].lower(), method)(value) for value in values]):
+                if any([getattr(query["sql"].lower(), method)(value) for value in values]):
                     include = False
                     break
 
@@ -268,11 +285,13 @@ def confirm_num_database_queries(context, expected_queries):
             excluded_queries.append(query)
 
     def print_issue():
-        pretty_included_queries = '\n'.join([f'{q["sql"]} ({q["time"]})' for q in included_queries])
-        pretty_excluded_queries = '\n'.join([f'{q["sql"]} ({q["time"]})' for q in excluded_queries])
-        return f'\n{len(included_queries)}\n'\
-               f'\n{pretty_included_queries}\n\n' \
-               f'------ Excluded queries not in the count ----\n\n{pretty_excluded_queries}'
+        pretty_included_queries = "\n".join([f'{q["sql"]} ({q["time"]})' for q in included_queries])
+        pretty_excluded_queries = "\n".join([f'{q["sql"]} ({q["time"]})' for q in excluded_queries])
+        return (
+            f"\n{len(included_queries)}\n"
+            f"\n{pretty_included_queries}\n\n"
+            f"------ Excluded queries not in the count ----\n\n{pretty_excluded_queries}"
+        )
 
     assert int(expected_queries) == len(included_queries), print_issue()
 
@@ -330,8 +349,8 @@ def insert_to_db(context, limpio, username):
         user.groups.add(models.Group.objects.get(**filters))
 
 
-@step('inserto un file con nombre "([^\"]+)" en el campo "([^\"]+)" del modelo "([^\"]+)" identificado por "([^\"]+)"')
-@step('I insert a file with name "([^\"]+)" in the field "([^\"]+)" of the model "([^\"]+)" identified by "([^\"]+)"')
+@step('inserto un file con nombre "([^"]+)" en el campo "([^"]+)" del modelo "([^"]+)" identificado por "([^"]+)"')
+@step('I insert a file with name "([^"]+)" in the field "([^"]+)" of the model "([^"]+)" identified by "([^"]+)"')
 def insert_to_db(context, filename, field, model, filter_fields):
     """
     Y inserto un file con nombre "test.py" en el campo "adjunto" del modelo "permiso.PeticionPermiso" identificado por "id=1"
@@ -340,4 +359,4 @@ def insert_to_db(context, filename, field, model, filter_fields):
     # The fields that identify each row are separated by a comma.
     filter_fields = dict(x.split("=") for x in filter_fields.split(","))
     instance = Model.objects.get(**filter_fields)
-    getattr(instance, field).save(filename, ContentFile(b'asdf'))
+    getattr(instance, field).save(filename, ContentFile(b"asdf"))

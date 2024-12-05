@@ -1,10 +1,10 @@
 import ast
-from functools import partial
 import json
+from functools import partial
 
 from behave import *
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.template import Template, Context
+from django.template import Context, Template
 from django.utils.module_loading import import_string
 from jq import jq
 from rest_framework.test import APIRequestFactory
@@ -16,13 +16,17 @@ from .utils import extract_field_value, pretty_print_table
 @step('I make requests from the url "([^"]+)"')
 def set_url(context, url):
     try:
-        context.http_headers['HTTP_REFERER'] = url
+        context.http_headers["HTTP_REFERER"] = url
     except AttributeError:
-        context.http_headers = {'HTTP_REFERER': url}
+        context.http_headers = {"HTTP_REFERER": url}
 
 
-@step('hago un "([^"]+)" a la url "([^"]+)"(?: con los argumentos "([^"]+)")?(?: (?:y|con) los parametros "([^"]+)")?(?: (?:y|con) body)?')
-@step('I make a "([^"]+)" to the url "([^"]+)"(?: with the arguments "([^"]+)")?(?: (?:and|with) the parameters "([^"]+)")?(?: (?:and|with) body)?')
+@step(
+    'hago un "([^"]+)" a la url "([^"]+)"(?: con los argumentos "([^"]+)")?(?: (?:y|con) los parametros "([^"]+)")?(?: (?:y|con) body)?'
+)
+@step(
+    'I make a "([^"]+)" to the url "([^"]+)"(?: with the arguments "([^"]+)")?(?: (?:and|with) the parameters "([^"]+)")?(?: (?:and|with) body)?'
+)
 def step_impl(context, method_name, url, url_args, url_params):
     """
     Hago un "get" a la url "factura"
@@ -43,7 +47,7 @@ def step_impl(context, method_name, url, url_args, url_params):
         '''
         # Use triple double-quotes
     """
-    headers = {'content_type': 'application/json'}
+    headers = {"content_type": "application/json"}
     try:
         headers = dict(headers, **context.http_headers)
     except AttributeError:
@@ -55,11 +59,11 @@ def step_impl(context, method_name, url, url_args, url_params):
     elif context.table:
         fields = context.table.headings
         # This is used to send a single dict as the payload
-        if len(fields) == 2 and 'key' in fields and 'value' in fields:
-            data = {item['key']: item['value'] for item in context.table.headings}
+        if len(fields) == 2 and "key" in fields and "value" in fields:
+            data = {item["key"]: item["value"] for item in context.table.headings}
         else:
             data = list(context.table.headings)
-    if not url.startswith('/'):
+    if not url.startswith("/"):
         # Hack!!
         # Could not find an easier way to parse the named url WITH parameters
         url = Template(f"{{% url '{url}' {url_args or ''} %}}").render(Context())
@@ -68,7 +72,7 @@ def step_impl(context, method_name, url, url_args, url_params):
     method = getattr(context.test.client, method_name.lower())
     if hasattr(context, "files") and context.files is not None:
         data = {**json.loads(data), **context.files}
-        headers.pop('content_type')
+        headers.pop("content_type")
         context.files = None
     context.response = method(url, data=data, **headers)
 
@@ -124,10 +128,7 @@ def step_impl(context, method_name, view_path, url_args, url_params):
         path=url,
         data=json.loads(data) if data else None,
         format="json",
-        **{
-            f"HTTP_{key.upper()}".replace("-", "_"): value
-            for key, value in headers.items()
-        },
+        **{f"HTTP_{key.upper()}".replace("-", "_"): value for key, value in headers.items()},
     )
     request.user = context.user
     request.session = {}
@@ -141,20 +142,20 @@ def step_impl(context, method_name, view_path, url_args, url_params):
     context.response = response
 
 
-@step('configuro los headers( usando literales|)')
-@step('I configure the headers( using literals|)')
+@step("configuro los headers( usando literales|)")
+@step("I configure the headers( using literals|)")
 def add_request_headers(context, use_literals):
     # The way django settings is made, it allows for settings and headers to be passed in as one
     context.http_headers = {}
     cast = ast.literal_eval if bool(use_literals) else lambda x: x
     for item in context.table.rows:
-        context.http_headers[item['name']] = cast(item['value'])
+        context.http_headers[item["name"]] = cast(item["value"])
 
 
 @step('añado un documento a la petición con el nombre "([^"]+)" y nombre de archivo "([^"]+)"')
 @step('I add a document to the request with the name "([^"]+)" and filename "([^"]+)"')
 def add_document_to_request(context, name, filename):
-    context.files = {name: SimpleUploadedFile(filename, b'test')}
+    context.files = {name: SimpleUploadedFile(filename, b"test")}
 
 
 @step('el codigo de retorno es "([0-9]{3})"')
@@ -166,7 +167,7 @@ def step_impl(context, status_code):
 @step('hay "([0-9]+)" elementos en la response')
 @step('there are "([0-9]+)" elements in the response')
 def step_impl(context, count):
-    assert len(context.response.json()['results']) == int(count)
+    assert len(context.response.json()["results"]) == int(count)
 
 
 @step('(?:utilizando el formato jq "(.*)")? la response es')
@@ -257,7 +258,7 @@ def check_request_response(context, jq_format):
           | Ping Pong |
 
     """
-    is_json = context.response.get('Content-Type') == 'application/json'
+    is_json = context.response.get("Content-Type") == "application/json"
     if is_json:
         actual = context.response.json()
         if jq_format:
@@ -285,21 +286,24 @@ def check_request_response(context, jq_format):
         else:
             # Remove all leading whitespace and new line chars from multiline before comparing.
             # Remove whitespace between dict key & value.
-            lines = context.text.split('\n')
+            lines = context.text.split("\n")
             lines_without_leading_whitespace = [line.lstrip() for line in lines]
-            one_str_of_all_lines = ''.join(lines_without_leading_whitespace)
-            without_space_after_colon = one_str_of_all_lines.replace(': ', ':')
+            one_str_of_all_lines = "".join(lines_without_leading_whitespace)
+            without_space_after_colon = one_str_of_all_lines.replace(": ", ":")
             expected = without_space_after_colon
-            actual = actual.replace(': ', ':')
+            actual = actual.replace(": ", ":")
         context.test.assertEquals.__self__.maxDiff = None
         context.test.assertEquals(actual, expected)
     else:
-        raise Exception('Nothing to compare')
+        raise Exception("Nothing to compare")
 
 
-@step('la respuesta contiene los siguientes headers')
-@step('the response contains the following headers')
+@step("la respuesta contiene los siguientes headers")
+@step("the response contains the following headers")
 def check_headers(context):
     for row in context.table.rows:
-        assert row['key'] in context.response.headers, (f'key {row["key"]} not found', context.response.headers.keys())
-        assert context.response.headers[row['key']] == row['value'], (context.response.headers[row['key']], row['value'])
+        assert row["key"] in context.response.headers, (f'key {row["key"]} not found', context.response.headers.keys())
+        assert context.response.headers[row["key"]] == row["value"], (
+            context.response.headers[row["key"]],
+            row["value"],
+        )

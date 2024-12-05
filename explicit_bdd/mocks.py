@@ -137,14 +137,14 @@ class MockDict:
                     pass
                 break
         if not stopped:
-            raise ValueError(f'Mock named {name} was never started, cannot be turned off')
+            raise ValueError(f"Mock named {name} was never started, cannot be turned off")
 
     def run(self, scope, name, *args, **kwargs):
         """Check that a mock is registered before activating it."""
         name_ = name.format(*args, **kwargs)
 
         if name not in self.mocks:
-            raise ValueError('Unknown mock. You must register the mock before you use it.')
+            raise ValueError("Unknown mock. You must register the mock before you use it.")
 
         self.activate(scope, name_, self.mocks[name](*args, **kwargs))
 
@@ -165,7 +165,7 @@ class MockDict:
                 # The original generator from the function, note that at this point nothing has been started
                 gen = func(*args, **kwargs)
                 # We ensure that what we received is indeed a generator, otherwise this won't work
-                assert isinstance(gen, GeneratorType), f'Mocked named {name} MUST return a generator'
+                assert isinstance(gen, GeneratorType), f"Mocked named {name} MUST return a generator"
                 # This is the first time we call the function, runs everything above the yield and stops.
                 next(gen)
                 # We then save the last part of the yield, that will have the clean up code to be run later by either
@@ -178,14 +178,16 @@ class MockDict:
             wrapped.original = func
 
             return wrapped
+
         return wrapper
 
-    def step(self, step_func_or_sentence, mock_name=None, scope='scenario'):
+    def step(self, step_func_or_sentence, mock_name=None, scope="scenario"):
         """
         This is a wrapper around aloe.step to add our custom code.
         """
+
         def wrapper(func):
-            name = mock_name or f'{func.__module__}.{func.__name__}'
+            name = mock_name or f"{func.__module__}.{func.__name__}"
             # Wrap the function around our normal mock() function, to handle the generator logic
             wrapped = self.mock(name)(func)
 
@@ -206,8 +208,8 @@ mocker = MOCK_REGISTRY.mock
 mocker_step = MOCK_REGISTRY.step
 
 
-@step('enciendo el mock llamado "([^\"]+)" para este "(caracteristica|escenario)"( con los argumentos)?')
-@step('I turn on the mock named "([^\"]+)" for this "(feature|scenario)"( with arguments)?')
+@step('enciendo el mock llamado "([^"]+)" para este "(caracteristica|escenario)"( con los argumentos)?')
+@step('I turn on the mock named "([^"]+)" for this "(feature|scenario)"( with arguments)?')
 def start_mocking(context, function_name, scope, receiving_args):
     """
     Starts the named mock functions.
@@ -227,18 +229,18 @@ def start_mocking(context, function_name, scope, receiving_args):
     kwargs = {}
     if receiving_args:
         if context.table:
-            assert 1 == len(context.table.rows), 'Mock objects only accept a single of arguments'
+            assert 1 == len(context.table.rows), "Mock objects only accept a single of arguments"
             kwargs = context.table.rows[0].as_dict()
-    if scope == 'caracteristica':
-        MOCK_REGISTRY.run('caracteristica', function_name, context, **kwargs)
-    elif scope == 'escenario':
-        MOCK_REGISTRY.run('escenario', function_name, context, **kwargs)
+    if scope == "caracteristica":
+        MOCK_REGISTRY.run("caracteristica", function_name, context, **kwargs)
+    elif scope == "escenario":
+        MOCK_REGISTRY.run("escenario", function_name, context, **kwargs)
     else:
-        raise ValueError(f'{scope} is not a valid scope')
+        raise ValueError(f"{scope} is not a valid scope")
 
 
-@step('apago el mock llamado "([^\"]+)"')
-@step('I turn off the mock named "([^\"]+)"')
+@step('apago el mock llamado "([^"]+)"')
+@step('I turn off the mock named "([^"]+)"')
 def stop_mocking(step_, name):
     """
     Stops the named mock function given a name.
@@ -257,7 +259,7 @@ def stop_feature_mocks(*args, **kwargs):
     """
     Turns off all the pending feature level mocks.
     """
-    MOCK_REGISTRY.stop(scope='caracteristica')
+    MOCK_REGISTRY.stop(scope="caracteristica")
 
 
 @fixture
@@ -267,11 +269,11 @@ def stop_scenario_mocks(*args, **kwargs):
 
     This will fire after each scenario and will fire after each example inside a scenario.
     """
-    MOCK_REGISTRY.stop(scope='escenario')
+    MOCK_REGISTRY.stop(scope="escenario")
 
 
-@step('verifico que el mock "([^\"]+)" ha sido llamado( con los siguientes parametros)?')
-@step('I verify that the mock "([^\"]+)" has been called( with the following parameters)?')
+@step('verifico que el mock "([^"]+)" ha sido llamado( con los siguientes parametros)?')
+@step('I verify that the mock "([^"]+)" has been called( with the following parameters)?')
 def verify_mocked_call_args(context, mock_name, params):
     """
     This step function can be used to assert the parameter with which a mock was called.
@@ -328,12 +330,15 @@ def verify_mocked_call_args(context, mock_name, params):
     for actual, expected in zip(actual_call_args(), expected_call_args):
         for header in headers:
             # Convert expected value from string to whatever type is actual value and assert that they are equal.
-            assert actual[header] == convert_type(actual[header])(expected[header]), (actual[header], convert_type(actual[header])(expected[header]))
+            assert actual[header] == convert_type(actual[header])(expected[header]), (
+                actual[header],
+                convert_type(actual[header])(expected[header]),
+            )
 
 
-@mocker_step('(limpio e |)mockeo las siguientes variables de entorno')
+@mocker_step("(limpio e |)mockeo las siguientes variables de entorno")
 def mock_environment_variables(context, clear_environ):
-    """ Mock in environment variables to use during tests. """
+    """Mock in environment variables to use during tests."""
     old_environ = deepcopy(environ)
     if clear_environ:
         # Only the variables we account for should be there.
@@ -341,7 +346,7 @@ def mock_environment_variables(context, clear_environ):
     for row in context.table.rows:
         # Other environment variables
         row_dict = row.as_dict()
-        environ[row_dict['key']] = row_dict['value']
+        environ[row_dict["key"]] = row_dict["value"]
 
     yield
 
@@ -350,9 +355,9 @@ def mock_environment_variables(context, clear_environ):
     environ.update(old_environ)
 
 
-@mocker_step('(I clear and |)I mock the following environment variables')
+@mocker_step("(I clear and |)I mock the following environment variables")
 def mock_environment_variables_eng(context, clear_environ):
-    """ Mock in environment variables to use during tests. """
+    """Mock in environment variables to use during tests."""
     old_environ = deepcopy(environ)
     if clear_environ:
         # Only the variables we account for should be there.
@@ -360,7 +365,7 @@ def mock_environment_variables_eng(context, clear_environ):
     for row in context.table.rows:
         # Other environment variables
         row_dict = row.as_dict()
-        environ[row_dict['key']] = row_dict['value']
+        environ[row_dict["key"]] = row_dict["value"]
 
     yield
 

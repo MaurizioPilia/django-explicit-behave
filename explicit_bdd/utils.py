@@ -4,22 +4,21 @@ import logging
 import operator
 from functools import partial
 
-import yaml
 import django
+import yaml
 from django.contrib.contenttypes.fields import GenericForeignKey
 
 if django.VERSION[0] >= 3:
     from django.db.models import JSONField
 else:
     from django.contrib.postgres.fields.jsonb import JSONField
-from django.db.models import UUIDField
-from django.core.exceptions import ValidationError, FieldDoesNotExist
+
+from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.management.color import no_style
 from django.core.serializers import python as serializers
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
-from django.db.models import ForeignKey, TextField, CharField
-from django.db.models import fields as django_fields
+from django.db.models import CharField, ForeignKey, TextField, UUIDField, fields as django_fields
 from django.utils.functional import keep_lazy_text
 from tabulate import tabulate
 
@@ -37,7 +36,7 @@ def get_field(model, field):
       > get_field(Model2, 'model1__model3__model4__id')
       <DjangoField: model4>
     """
-    field, _, related = field.partition('__')
+    field, _, related = field.partition("__")
     Field = model._meta.get_field(field)
     if not related:
         return Field
@@ -58,13 +57,17 @@ def extract_field_value(data_or_model, field, raise_exceptions=False):
             return data_or_model[field]
 
     try:
-        if '__' not in field:
+        if "__" not in field:
             val = get_val(data_or_model, field)
-            return str(val) if isinstance(val, (dict, list)) and not isinstance(data_or_model._meta.get_field(field), JSONField) else val
-        base_field, _, remaining_field = field.partition('__')
+            return (
+                str(val)
+                if isinstance(val, (dict, list)) and not isinstance(data_or_model._meta.get_field(field), JSONField)
+                else val
+            )
+        base_field, _, remaining_field = field.partition("__")
         return extract_field_value(get_val(data_or_model, base_field), remaining_field, raise_exceptions)
     except AttributeError:
-        logger.exception('')
+        logger.exception("")
         if raise_exceptions:
             raise
         return None
@@ -80,19 +83,20 @@ def pretty_print_table(fields, data):
         rows = [fields] + [[extract_field_value(row, key) for key in fields] for row in data]
     except AttributeError:
         # We could't format it, just dump it.
-        return f'\n\nWhat we actually got back was:\n{json.dumps(data, indent=2, cls=DjangoJSONEncoder)}'
+        return f"\n\nWhat we actually got back was:\n{json.dumps(data, indent=2, cls=DjangoJSONEncoder)}"
 
-    pretty_table = tabulate(rows, tablefmt='orgtbl', numalign='left')
-    return f'\n\nWhat we actually got back was:\n{pretty_table}'
+    pretty_table = tabulate(rows, tablefmt="orgtbl", numalign="left")
+    return f"\n\nWhat we actually got back was:\n{pretty_table}"
 
 
 class GenericSerializer(serializers.Serializer):
     """
     Serializer to convert the GenericForeignKey fields to natural keys
     """
+
     def serialize(self, *args, **kwargs):
-        self.selected_all_fields = kwargs['fields']
-        kwargs['fields'] = [field for field in kwargs['fields'] if field not in '__']
+        self.selected_all_fields = kwargs["fields"]
+        kwargs["fields"] = [field for field in kwargs["fields"] if field not in "__"]
         return super().serialize(*args, **kwargs)
 
     def handle_fk_field(self, obj, field):
@@ -108,16 +112,16 @@ class GenericSerializer(serializers.Serializer):
         # When serializing models from our testing MigrationGherkin framework, those models will never have
         # natural_key() or get_by_natural_key() in the model's Manager because the model is built dynamically from
         # the current migration script and all prior migration scripts. This extra step compensates for that.
-        if obj.__module__ == '__fake__':
+        if obj.__module__ == "__fake__":
             related = getattr(obj, field.name)
             model_name = related.__class__.__name__
             if related:
-                if hasattr(related, 'nk'):
+                if hasattr(related, "nk"):
                     self._current[field.name] = [related.nk]
-                elif model_name == 'ContentType':
+                elif model_name == "ContentType":
                     self._current[field.name] = [related.app_label, related.model]
                 else:
-                    raise AttributeError(f'Fake model {model_name} does not have a natural key')
+                    raise AttributeError(f"Fake model {model_name} does not have a natural key")
 
         if self._current[field.name]:
             self._current[field.name] = yaml.dump(list(self._current[field.name])).strip()
@@ -130,8 +134,10 @@ class GenericSerializer(serializers.Serializer):
         for field_name in missing_fields:
             field = get_field(obj, field_name)
             if isinstance(field, GenericForeignKey):
-                data = [yaml.dump(list(extract_field_value(obj, field.ct_field).natural_key())).strip(),
-                        yaml.dump(list(extract_field_value(obj, field.name).natural_key())).strip()]
+                data = [
+                    yaml.dump(list(extract_field_value(obj, field.ct_field).natural_key())).strip(),
+                    yaml.dump(list(extract_field_value(obj, field.name).natural_key())).strip(),
+                ]
                 self._current[field.name] = f'[{", ".join(data)}]'
             else:
                 self._current[field_name] = extract_field_value(obj, field_name)
@@ -145,6 +151,7 @@ class ParseQuery:
     Note that the name is this way because this class is more of a callable than an instance.
     See https://www.python.org/dev/peps/pep-0008/#class-names for more details.
     """
+
     serialize = partial(GenericSerializer().serialize, use_natural_primary_keys=True, use_natural_foreign_keys=True)
 
     def __init__(self, queryset, *fields):
@@ -196,7 +203,7 @@ def parse_step_objects(context, Model, raise_exceptions=True):
 
             # Tags the field as having the ability to search for/display NKs
             foreign_model_fields = [x.name for x in ForeignModel._meta.get_fields()]
-            if hasattr(ForeignModel.objects, 'get_by_natural_key') or 'nk' in foreign_model_fields:
+            if hasattr(ForeignModel.objects, "get_by_natural_key") or "nk" in foreign_model_fields:
                 obj_by_nk_by_field[field_name] = {}
                 fk_model_by_field[field_name] = ForeignModel
 
@@ -208,7 +215,7 @@ def parse_step_objects(context, Model, raise_exceptions=True):
             if not value:
                 # No need to look for something that's not there..
                 pass
-            elif value.startswith('[') and value.endswith(']'):
+            elif value.startswith("[") and value.endswith("]"):
                 # Handle special "[..]" nk format
                 obj_by_nk_by_field[lookup_field][value] = yaml.load(value, Loader=yaml.FullLoader)
             elif not value.isdigit():
@@ -218,9 +225,9 @@ def parse_step_objects(context, Model, raise_exceptions=True):
                 pass
 
     for lookup_field in obj_by_id_by_field.keys():
-            value = item[lookup_field]
-            if value.isdigit():
-                obj_by_id_by_field[lookup_field][value] = None
+        value = item[lookup_field]
+        if value.isdigit():
+            obj_by_id_by_field[lookup_field][value] = None
 
     # Do a single lookup call for all ids at once.
     for lookup_field, value_map in obj_by_id_by_field.items():
@@ -256,19 +263,18 @@ def parse_step_objects(context, Model, raise_exceptions=True):
                 # ct_field: holds the id of the content type of the Model class
                 # fk_field: holds the pk of the actual object_ in that Model class
                 model_field = get_field(Model, field_name)
-                obj_by_nk_by_field[field_name][original] = ReplaceField({
-                    model_field.ct_field: content_type,
-                    model_field.fk_field: obj_id,
-                    field_name: obj
-                })
+                obj_by_nk_by_field[field_name][original] = ReplaceField(
+                    {model_field.ct_field: content_type, model_field.fk_field: obj_id, field_name: obj}
+                )
             else:
                 try:
                     value = queryset.get_by_natural_key(*nk_args)
                 except fk_model_by_field[field_name].DoesNotExist:
                     value = None
                     if raise_exceptions:
-                        raise fk_model_by_field[field_name]\
-                            .DoesNotExist(f'{fk_model_by_field[field_name]} matching {nk_args} does not exist.')
+                        raise fk_model_by_field[field_name].DoesNotExist(
+                            f"{fk_model_by_field[field_name]} matching {nk_args} does not exist."
+                        )
                 except AttributeError:
                     value = queryset.get(nk=nk_args[0])
                 # Process a simple foreign key field.
@@ -307,6 +313,7 @@ class ReplaceField(dict):
     Special dictionary object used to tag a field that needs to be ignored completely and replaced with whatever this
     holds in it's content. This is mainly used to replace fake/private fields like "GenericForeignKey".
     """
+
     pass
 
 
@@ -322,15 +329,15 @@ def get_to_python_field(model, field, value):
     field = get_field(model, field)
     if isinstance(field, ForeignKey):
         # ForeignKey don't like empty strings, they need to be converted to None
-        if value == '':
+        if value == "":
             return None
         field = field.related_model._meta.pk
     elif isinstance(field, (TextField, CharField)):
-        if value == '':
+        if value == "":
             return None
         # Since an empty value is always converted to None, an empty string must be specified as '""' or "''".
         elif value == '""' or value == "''":
-            return ''
+            return ""
     elif isinstance(field, JSONField):
         # JSONField.to_python() is not implemented. See the reason at https://code.djangoproject.com/ticket/29147
         # Handle this case to fulfill our own needs.
@@ -350,7 +357,7 @@ def reset_db_seq(Model, next_value=None):
                                  If unspecified, set the sequence so the next value is max(id) + 1.
     """
     try:
-        primary_key = Model._meta.get_field('id')
+        primary_key = Model._meta.get_field("id")
     except FieldDoesNotExist:
         return  # If id field does not exist, do not reset the sequence.
 
@@ -402,7 +409,7 @@ def convert_type(obj):
     """
     obj_type = type(obj)
     if obj_type == NoneType:
-        return lambda x: None if x == '' else x
+        return lambda x: None if x == "" else x
     elif obj_type == datetime.datetime:
         return partial(django_fields.DateTimeField.to_python, None)
     elif obj_type == datetime.date:
@@ -412,10 +419,9 @@ def convert_type(obj):
 
 def get_model(model):
     try:
-        app_label, model_name, through_model = model.split('.')
+        app_label, model_name, through_model = model.split(".")
         Model = django.apps.apps.get_model(app_label=app_label, model_name=model_name)
         return getattr(Model, through_model).through
     except ValueError:
-        app_label, model_name = model.split('.')
+        app_label, model_name = model.split(".")
         return django.apps.apps.get_model(app_label=app_label, model_name=model_name)
-
