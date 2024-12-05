@@ -39,8 +39,9 @@ dependencies = [
     "django>=4.2",
     'jq>=0.1.6',
     'model-bakery>=1.3.2',
-    "pytest-cov",
     "pytest-bdd",
+    "pytest-cov",
+    "pytest-django",
     'tabulate>=0.8.3',
 ]
 requires-python = ">=3.8"
