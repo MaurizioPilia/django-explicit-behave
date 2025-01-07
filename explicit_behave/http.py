@@ -278,7 +278,7 @@ def check_request_response(context, jq_format):
             actual = [actual]
         cleaned_data = [{field: str(extract_field_value(item, field)) for field in fields} for item in actual]
         expected_data = [{field: item[field] for field in fields} for item in context.table.rows]
-        context.test.assertEquals(cleaned_data, expected_data, pretty_print_table(fields, cleaned_data))
+        context.test.assertEqual(cleaned_data, expected_data, pretty_print_table(fields, cleaned_data))
     elif context.text is not None:
         if is_json:
             expected = json.loads(context.text)
@@ -291,8 +291,8 @@ def check_request_response(context, jq_format):
             without_space_after_colon = one_str_of_all_lines.replace(': ', ':')
             expected = without_space_after_colon
             actual = actual.replace(': ', ':')
-        context.test.assertEquals.__self__.maxDiff = None
-        context.test.assertEquals(actual, expected)
+        context.test.assertEqual.__self__.maxDiff = None
+        context.test.assertEqual(actual, expected)
     else:
         raise Exception('Nothing to compare')
 
