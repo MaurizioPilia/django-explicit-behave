@@ -306,10 +306,11 @@ class adjust_searchpath_for_model:
             self.context.__exit__(type, value, traceback)
 
 
-@step('(limpio y )?asigno los siguientes permisos al usuario con username "([^"]+)"')
-@step('(I clear and )?I assign the following permissions to the user with username "([^"]+)"')
-def insert_to_db(context, limpio, username):
-    user = UserModel.objects.get(**{UserModel.USERNAME_FIELD: username})
+@step('(limpio y )?asigno los siguientes permisos al usuario con (campo )?username "([^"]+)"')
+@step('(I clear and )?I assign the following permissions to the user with (field )?username "([^"]+)"')
+def assign_permissions(context, limpio, campo, value):
+    field = 'username' if campo else UserModel.USERNAME_FIELD
+    user = UserModel.objects.get(**{field: value})
     if limpio:
         user.user_permissions.all().delete()
 
@@ -318,10 +319,11 @@ def insert_to_db(context, limpio, username):
         user.user_permissions.add(models.Permission.objects.get(**filters))
 
 
-@step('(limpio y )?asigno los siguientes grupos al usuario con username "([^"]+)"')
-@step('(I clear and )?I assign the following groups to the user with username "([^"]+)"')
-def insert_to_db(context, limpio, username):
-    user = UserModel.objects.get(**{UserModel.USERNAME_FIELD: username})
+@step('(limpio y )?asigno los siguientes grupos al usuario con (campo )?username "([^"]+)"')
+@step('(I clear and )?I assign the following groups to the user with (field )?username "([^"]+)"')
+def assign_groups(context, limpio, campo, value):
+    field = 'username' if campo else UserModel.USERNAME_FIELD
+    user = UserModel.objects.get(**{field: value})
     if limpio:
         user.groups.all().delete()
 
